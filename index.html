@@ -1,1 +1,69 @@
-
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Entropy Worksheet</title><style>
+*{box-sizing:border-box}body{margin:0;background:#eef2f7;font:15px Arial,sans-serif;color:#1a2538}.toolbar{position:sticky;top:0;background:white;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:15px;z-index:2;border-bottom:1px solid #ccd6e3}.toolbar button{background:#1769d2;color:white;border:0;border-radius:7px;padding:12px 18px;cursor:pointer;font-weight:bold}.wrap{overflow:auto;padding:22px}.sheet{background:white;padding:24px;width:1170px;margin:auto;box-shadow:0 4px 24px #24364c1c}h2{margin:0 0 18px}table{border-collapse:collapse;width:1120px;table-layout:fixed}col.c0{width:285px}col.c1,col.c2,col.c3{width:115px}col.c4{width:195px}col.c5,col.c6{width:147.5px}td{height:42px;border:1px solid #bfcbd8;padding:5px 8px}tr.section td{background:#e6edf8;font-weight:700}tr.header td{background:#f0f4f9;font-weight:700}tr.spacer td{border:0;height:19px}input{width:100%;height:31px;border:1px solid #d1dbe8;border-radius:5px;background:#f8faff;padding:4px 8px;font:inherit}input:focus{outline:2px solid #3581de}input.calc{background:#e9f5ee;color:#155e37;font-weight:600}input.attribute{width:280px;display:inline-block;margin-left:10px} .exporting{box-shadow:none}@media print{.toolbar{display:none}.wrap{padding:0}.sheet{box-shadow:none}}
+.editable-heading{width:100%;min-width:0;font:inherit;font-weight:700;color:#1a2538;background:transparent;border:1px solid transparent;border-radius:5px;padding:5px 3px}.editable-heading:focus{background:#fff;border-color:#3984dd;outline:2px solid #3984dd44} 
+.tree-area{margin-top:28px;border-top:2px solid #c3cfdf;padding-top:18px}
+.tree-area h2{margin-bottom:8px}
+.tree-note{font-size:13px;color:#536175;margin-bottom:12px}
+.tree-tools{display:flex;gap:9px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.tree-tools button{background:#fff;color:#1a2538;border:1px solid #bccbde;border-radius:6px;padding:8px 13px;cursor:pointer}
+.tree-tools button.active{background:#1769d2;color:white;border-color:#1769d2}
+.tree-canvas{display:block;width:100%;height:520px;border:1px solid #bfcbd8;border-radius:6px;background:#fff;touch-action:none;cursor:crosshair}
+</style></head><body><div class="toolbar"><div><strong>Entropy &amp; Information Gain Worksheet</strong><div style="font-size:12px;color:#5b6878;margin-top:4px">Enter counts, totals and probabilities. Entropy in the attribute tables calculates automatically. Summary entries are editable.</div></div><button id="download">Download as PNG</button></div><div class="wrap"><div class="sheet" id="sheet"><h2>Entropy &amp; Information Gain Calculation</h2><table><colgroup><col class="c0"><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"></colgroup><tbody id="grid"></tbody></table>
+<section class="tree-area">
+<h2>Decision Tree Drawing</h2>
+<div class="tree-note">Draw your decision tree below. Use Pen or Eraser, and Undo or Clear if needed. Your drawing will be included in the downloaded PNG.</div>
+<div class="tree-tools" data-html2canvas-ignore="true">
+<button type="button" id="pen" class="active">Pen</button>
+<button type="button" id="eraser">Eraser</button>
+<button type="button" id="undo">Undo</button>
+<button type="button" id="clear-tree">Clear Drawing</button>
+</div>
+<canvas id="tree-canvas" class="tree-canvas" width="1120" height="520" aria-label="Draw your decision tree here"></canvas>
+</section></div></div><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script>
+const grid=document.getElementById('grid');const fields=new Map();const blocks=[];const summary=[];
+function tr(cls=''){const x=document.createElement('tr');if(cls)x.className=cls;grid.appendChild(x);return x}
+function cell(row,text='',options={}){const td=document.createElement('td');if(options.span)td.colSpan=options.span;row.appendChild(td);if(options.input){const i=document.createElement('input');i.type='text';i.setAttribute('aria-label',options.key||'Answer');if(options.calc){i.readOnly=true;i.className='calc';i.title='Calculated automatically'}if(options.key)fields.set(options.key,i);td.appendChild(i)}else{td.textContent=text}return td}
+function blank(){cell(tr('spacer'),'',{span:7})}
+function section(text){cell(tr('section'),text,{span:7})}
+function dataHeader(){let r=tr('header');['Value','Yes','No','Total','P(Yes)','P(No)','Entropy'].forEach(x=>cell(r,x))}
+let r=tr('section');['Overall Entropy Calculation','','',''].forEach(x=>cell(r,x));['Attribute Summary','Weighted Entropy','Information Gain'].forEach((x,i)=>{const td=cell(r);const input=document.createElement('input');input.type='text';input.value=x;input.className='editable-heading';input.setAttribute('aria-label','Edit '+x+' heading');td.appendChild(input)});
+r=tr('header');['Metric','Result','','','','',''].forEach(x=>cell(r,x));
+const overall=['Yes Count','No Count','Total','P(Yes)','P(No)','Entropy(Dataset)'];overall.forEach((name,i)=>{let row=tr();cell(row,name);cell(row,'',{input:true,key:'overall:'+i,calc:i===5});cell(row);cell(row);if(i===4){cell(row,'Best Attribute');cell(row,'',{input:true,key:'best:weighted'});cell(row,'',{input:true,key:'best'})}else{cell(row,'',{input:true,key:'summary:'+i+':name'});cell(row,'',{input:true,key:'summary:'+i+':weighted'});cell(row,'',{input:true,key:'summary:'+i+':gain'})}});
+blank();
+function attributeBlock(index,node=false){const label=tr('section');const td=cell(label,'',{span:7});td.textContent='Attribute: ';const name=document.createElement('input');name.className='attribute';name.setAttribute('aria-label','Attribute name');name.addEventListener('input',calculate);td.appendChild(name);dataHeader();const keys=[];for(let j=0;j<3;j++){let row=tr();let prefix='block:'+index+':'+j;for(let c=0;c<7;c++){let key=prefix+':'+c;cell(row,'',{input:true,key,calc:c===6});keys.push(key)}}const wr=tr();cell(wr,'Weighted Entropy');cell(wr,'',{span:5});cell(wr,'',{input:true,key:'weighted:'+index,calc:true});const ir=tr();cell(ir,'Information Gain');cell(ir,'',{span:5});cell(ir,'',{input:true,key:'gain:'+index,calc:true});blocks.push({name,keys,index});blank();blank()}
+for(let i=0;i<4;i++)attributeBlock(i);section('Node 2');for(let i=4;i<10;i++)attributeBlock(i,true);
+function number(key){const v=fields.get(key)?.value.trim();if(v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null}
+function write(key,n){const el=fields.get(key);if(el)el.value=n===null||!Number.isFinite(n)?'':String(Math.round(n*1000000)/1000000)}
+function entropy(p,q){if(p===null||q===null||p<0||q<0||p>1||q>1)return null;return -((p===0?0:p*Math.log2(p))+(q===0?0:q*Math.log2(q)))}
+function calculate(){const total=number('overall:2');const e=entropy(number('overall:3'),number('overall:4'));write('overall:5',e);let gains=[];for(const block of blocks){let w=0,valid=total!==null&&total>0;for(let j=0;j<3;j++){let pre='block:'+block.index+':'+j+':';const t=number(pre+'3'),p=number(pre+'4'),q=number(pre+'5');const ent=entropy(p,q);write(pre+'6',ent);if(t===null||ent===null){valid=false}else{w+=(t/total)*ent}}if(!valid)w=null;write('weighted:'+block.index,w);const gain=w===null||e===null?null:e-w;write('gain:'+block.index,gain);gains.push(gain);}}
+grid.addEventListener('input',calculate);calculate();
+const treeCanvas=document.getElementById('tree-canvas');
+const treeCtx=treeCanvas.getContext('2d');
+const strokes=[];let currentStroke=null;let treeTool='pen';
+function redrawTree(){
+ treeCtx.clearRect(0,0,treeCanvas.width,treeCanvas.height);
+ for(const stroke of strokes){
+  if(!stroke.points.length)continue;
+  treeCtx.save();
+  treeCtx.globalCompositeOperation=stroke.tool==='eraser'?'destination-out':'source-over';
+  treeCtx.strokeStyle='#17243a';treeCtx.fillStyle='#17243a';
+  treeCtx.lineWidth=stroke.tool==='eraser'?24:3;
+  treeCtx.lineCap='round';treeCtx.lineJoin='round';
+  treeCtx.beginPath();treeCtx.moveTo(stroke.points[0].x,stroke.points[0].y);
+  for(const p of stroke.points.slice(1))treeCtx.lineTo(p.x,p.y);
+  if(stroke.points.length===1){treeCtx.lineTo(stroke.points[0].x+0.01,stroke.points[0].y+0.01)}
+  treeCtx.stroke();treeCtx.restore();
+ }
+}
+function treePoint(ev){const r=treeCanvas.getBoundingClientRect();return {x:(ev.clientX-r.left)*treeCanvas.width/r.width,y:(ev.clientY-r.top)*treeCanvas.height/r.height}}
+treeCanvas.addEventListener('pointerdown',ev=>{ev.preventDefault();treeCanvas.setPointerCapture(ev.pointerId);currentStroke={tool:treeTool,points:[treePoint(ev)]};strokes.push(currentStroke);redrawTree()});
+treeCanvas.addEventListener('pointermove',ev=>{if(!currentStroke)return;currentStroke.points.push(treePoint(ev));redrawTree()});
+function finishStroke(){currentStroke=null}
+treeCanvas.addEventListener('pointerup',finishStroke);treeCanvas.addEventListener('pointercancel',finishStroke);
+function setTreeTool(tool){treeTool=tool;document.getElementById('pen').classList.toggle('active',tool==='pen');document.getElementById('eraser').classList.toggle('active',tool==='eraser')}
+document.getElementById('pen').onclick=()=>setTreeTool('pen');
+document.getElementById('eraser').onclick=()=>setTreeTool('eraser');
+document.getElementById('undo').onclick=()=>{strokes.pop();redrawTree()};
+document.getElementById('clear-tree').onclick=()=>{if(confirm('Clear the decision tree drawing?')){strokes.length=0;redrawTree()}};
+document.getElementById('download').addEventListener('click' ,async()=>{const btn=document.getElementById('download');btn.disabled=true;btn.textContent='Exporting…';try{if(typeof html2canvas!=='function')throw Error('Image library unavailable. Connect to the internet and reload.');const sheet=document.getElementById('sheet');const canvas=await html2canvas(sheet,{backgroundColor:'#fff',scale:2,onclone(doc){doc.querySelectorAll('#sheet input').forEach(el=>{const span=doc.createElement('span');span.textContent=el.value||' ';span.style.cssText='display:inline-block;min-height:28px;padding:5px 2px;white-space:pre-wrap;overflow-wrap:anywhere';el.replaceWith(span)})}});const a=document.createElement('a');a.download='entropy-worksheet.png';a.href=canvas.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove()}catch(err){alert('Export failed: '+err.message)}finally{btn.disabled=false;btn.textContent='Download as PNG'}});
+</script></body></html>
